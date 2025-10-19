@@ -38,6 +38,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"DoUninstall", {CLEAR_ON_MANAGER_START, BOOL}},
     {"DriverTooDistracted", {CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_ON, BOOL}},
     {"AlphaLongitudinalEnabled", {PERSISTENT | DEVELOPMENT_ONLY, BOOL}},
+    {"AlwaysOnLateralEnabled", {PERSISTENT, BOOL, "0"}},  // ENHANCED: Feature 3 - AOL master toggle
+    {"AlwaysOnLateralOnMain", {PERSISTENT, BOOL, "1"}},  // ENHANCED: Feature 3 - Enable lateral with MAIN button
+    {"AlwaysOnLateralPauseOnBrake", {PERSISTENT, BOOL, "0"}},  // ENHANCED: Feature 3 - Pause AOL on brake
     {"ExperimentalMode", {PERSISTENT, BOOL}},
     {"ExperimentalModeConfirmed", {PERSISTENT, BOOL}},
     {"FirmwareQueryDone", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, BOOL}},

@@ -162,6 +162,10 @@ class CarSpecificEvents:
       events.add(EventName.parkBrake)
     if CS.accFaulted:
       events.add(EventName.accFaulted)
+    # ENHANCED: Feature 3 - AOL: Always detect steering override for safety
+    # The steerOverride event transitions to 'overriding' state, which automatically
+    # returns to 'enabled' when steering is released. This allows temporary manual
+    # steering without full disengagement when AOL is active.
     if CS.steeringPressed:
       events.add(EventName.steerOverride)
     if CS.steeringDisengage and not CS_prev.steeringDisengage:
