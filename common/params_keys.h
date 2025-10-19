@@ -114,6 +114,10 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SecOCKey", {PERSISTENT | DONT_LOG, STRING}},
     {"RouteCount", {PERSISTENT, INT, "0"}},
     {"SnoozeUpdate", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL}},
+    {"SpeedLimitControlEnabled", {PERSISTENT, BOOL, "0"}},  // ENHANCED: Feature 4 - SLC master toggle
+    {"SpeedLimitControlState", {PERSISTENT, STRING, ""}},  // ENHANCED: Feature 4 - US state for OSM database
+    {"SpeedLimitOffset", {PERSISTENT, INT, "0"}},  // ENHANCED: Feature 4 - Percentage offset from speed limit
+    {"SpeedLimitTransitionRate", {PERSISTENT, FLOAT, "2.0"}},  // ENHANCED: Feature 4 - Max speed change rate (mph/s)
     {"SshEnabled", {PERSISTENT, BOOL}},
     {"TermsVersion", {PERSISTENT, STRING}},
     {"TrainingVersion", {PERSISTENT, STRING}},
