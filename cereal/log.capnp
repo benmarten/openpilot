@@ -136,9 +136,11 @@ struct OnroadEvent @0xc4fa6047f024e718 {
 }
 
 enum LongitudinalPersonality {
-  aggressive @0;
-  standard @1;
-  relaxed @2;
+  # ENHANCED: Feature 2 - Enhanced Personalities (4 profiles)
+  aggressive @0;  # 0.6s following distance
+  close @1;       # 1.0s following distance
+  standard @2;    # 2.0s following distance (default)
+  relaxed @3;     # 3.0s following distance
 }
 
 struct InitData {
