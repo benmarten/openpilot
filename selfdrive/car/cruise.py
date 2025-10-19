@@ -123,16 +123,29 @@ class VCruiseHelper:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
-  def initialize_v_cruise(self, CS, experimental_mode: bool) -> None:
+  def initialize_v_cruise(self, CS, experimental_mode: bool, slc_target_kph: float = None) -> None:
+    # ENHANCED: Feature 5 - Intelligent Activation: SLC-aware cruise initialization
     # initializing is handled by the PCM
     if self.CP.pcmCruise:
       return
 
     initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode else V_CRUISE_INITIAL
 
-    if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_initialized:
+    # Detect button types
+    accel_button = any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents)
+    decel_button = any(b.type == ButtonType.decelCruise for b in CS.buttonEvents)
+
+    if accel_button and self.v_cruise_initialized:
+      # SET+/RES with existing cruise - resume last speed
       self.v_cruise_kph = self.v_cruise_kph_last
+    elif accel_button and slc_target_kph is not None:
+      # SET+/RES pressed first time with SLC active - use SLC calculated target
+      self.v_cruise_kph = int(round(np.clip(slc_target_kph, V_CRUISE_MIN, V_CRUISE_MAX)))
+    elif decel_button:
+      # SET- pressed - use current speed
+      self.v_cruise_kph = int(round(np.clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
     else:
+      # Fallback - use current speed or default
       self.v_cruise_kph = int(round(np.clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph

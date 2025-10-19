@@ -65,7 +65,8 @@ class Car:
 
   def __init__(self, CI=None, RI=None) -> None:
     self.can_sock = messaging.sub_sock('can', timeout=20)
-    self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
+    # ENHANCED: Feature 5 - Intelligent Activation: Add longitudinalPlan for SLC target
+    self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents', 'longitudinalPlan'])
     self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'liveTracks'])
 
     self.can_rcv_cum_timeout_counter = 0
@@ -186,8 +187,19 @@ class Car:
 
     self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
     if self.sm['carControl'].enabled and not self.CC_prev.enabled:
+      # ENHANCED: Feature 5 - Intelligent Activation: Get SLC target if available
+      slc_target_kph = None
+      if self.sm.valid['longitudinalPlan']:
+        lp = self.sm['longitudinalPlan']
+        if lp.speedLimitActive and lp.speedLimit > 0:
+          # SLC is active and has a valid speed limit - get the actual target speed
+          # The longitudinalPlan already has the offset applied and respects user cruise
+          # We need to convert the limit with offset to kph
+          from openpilot.common.conversions import Conversions as CV
+          slc_target_kph = lp.speedLimit * (1.0 + (int(Params().get("SpeedLimitOffset", encoding='utf-8') or "0") / 100.0)) * CV.MPH_TO_KPH
+
       # Use CarState w/ buttons from the step selfdrived enables on
-      self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode)
+      self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode, slc_target_kph)
 
     # TODO: mirror the carState.cruiseState struct?
     CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
