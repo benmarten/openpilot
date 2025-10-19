@@ -1254,6 +1254,10 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   allowThrottle @38: Bool;
   allowBrake @39: Bool;
 
+  # ENHANCED: Feature 4 - SLC
+  speedLimit @40 :Float32;
+  speedLimitSource @41 :Text;
+  speedLimitActive @42 :Bool;
 
   solverExecutionTime @35 :Float32;
 

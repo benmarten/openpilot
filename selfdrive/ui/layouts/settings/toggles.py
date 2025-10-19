@@ -78,6 +78,13 @@ class TogglesLayout(Widget):
         icon="steering_wheel.png",
       ),
       toggle_item(
+        "Speed Limit Control",
+        # ENHANCED: Feature 4 - SLC
+        "Automatically adjust cruise speed to speed limits from OpenStreetMap (OSM). Requires OSM database for your state.",
+        self._params.get_bool("SpeedLimitControlEnabled"),
+        icon="speed_limit.png",
+      ),
+      toggle_item(
         "Record and Upload Driver Camera",
         DESCRIPTIONS["RecordFront"],
         self._params.get_bool("RecordFront"),

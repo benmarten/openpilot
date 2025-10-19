@@ -14,6 +14,7 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_accel_from_plan
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitController  # ENHANCED: Feature 4 - SLC
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
@@ -69,6 +70,10 @@ class LongitudinalPlanner:
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
 
+    # ENHANCED: Feature 4 - SLC
+    self.slc = SpeedLimitController()
+    self.slc_target_kph = None
+
   @staticmethod
   def parse_model(model_msg):
     if (len(model_msg.position.x) == ModelConstants.IDX_N and
@@ -99,6 +104,23 @@ class LongitudinalPlanner:
 
     v_ego = sm['carState'].vEgo
     v_cruise_kph = min(sm['carState'].vCruise, V_CRUISE_MAX)
+    v_cruise_kph_user = v_cruise_kph  # ENHANCED: Feature 4 - SLC: Save user-set cruise speed
+
+    # ENHANCED: Feature 4 - SLC: Apply speed limit control
+    slc_target_kph = self.slc.get_target_speed(sm, v_cruise_kph_user)
+    if slc_target_kph is not None:
+      # Initialize SLC target on first activation
+      if self.slc_target_kph is None:
+        self.slc_target_kph = v_cruise_kph_user
+      # Smooth transition to target
+      self.slc_target_kph = self.slc.smooth_transition(self.slc_target_kph, slc_target_kph, self.dt)
+      # Use lower of SLC target and user cruise (user cruise is upper bound)
+      v_cruise_kph = min(self.slc_target_kph, v_cruise_kph_user)
+    else:
+      # SLC inactive, use user cruise speed
+      v_cruise_kph = v_cruise_kph_user
+      self.slc_target_kph = None
+
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
     v_cruise_initialized = sm['carState'].vCruise != V_CRUISE_UNSET
 
@@ -197,5 +219,10 @@ class LongitudinalPlanner:
     longitudinalPlan.shouldStop = bool(self.output_should_stop)
     longitudinalPlan.allowBrake = True
     longitudinalPlan.allowThrottle = bool(self.allow_throttle)
+
+    # ENHANCED: Feature 4 - SLC: Publish speed limit data
+    longitudinalPlan.speedLimit = float(self.slc.current_limit) if self.slc.current_limit else 0.0
+    longitudinalPlan.speedLimitSource = "osm" if self.slc.current_limit else ""
+    longitudinalPlan.speedLimitActive = self.slc_target_kph is not None
 
     pm.send('longitudinalPlan', plan_send)
