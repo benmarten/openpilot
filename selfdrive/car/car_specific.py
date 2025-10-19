@@ -3,6 +3,7 @@ import cereal.messaging as messaging
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import MAX_CTRL_SPEED
 
+from openpilot.common.params import Params  # ENHANCED: Feature 3 - AOL
 from openpilot.selfdrive.selfdrived.events import Events
 
 ButtonType = structs.CarState.ButtonEvent.Type
@@ -29,6 +30,7 @@ class MockCarState:
 class CarSpecificEvents:
   def __init__(self, CP: structs.CarParams):
     self.CP = CP
+    self.params = Params()  # ENHANCED: Feature 3 - AOL
 
     self.steering_unpressed = 0
     self.low_speed_alert = False
@@ -162,7 +164,8 @@ class CarSpecificEvents:
       events.add(EventName.parkBrake)
     if CS.accFaulted:
       events.add(EventName.accFaulted)
-    if CS.steeringPressed:
+    # ENHANCED: Feature 3 - AOL: Don't trigger steerOverride when AOL enabled
+    if CS.steeringPressed and not self.params.get_bool("AlwaysOnLateralEnabled"):
       events.add(EventName.steerOverride)
     if CS.steeringDisengage and not CS_prev.steeringDisengage:
       events.add(EventName.steerDisengage)

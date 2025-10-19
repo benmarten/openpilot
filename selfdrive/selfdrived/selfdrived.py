@@ -109,6 +109,7 @@ class SelfdriveD:
     self.enabled = False
     self.active = False
     self.mismatch_counter = 0
+    self.cruise_available_prev = False  # ENHANCED: Feature 3 - AOL MAIN button tracking
     self.cruise_mismatch_counter = 0
     self.last_steering_pressed_frame = 0
     self.distance_traveled = 0
@@ -197,11 +198,28 @@ class SelfdriveD:
           # body always wants to enable
           self.events.add(EventName.pcmEnable)
 
+      # ENHANCED: Feature 3 - AOL: MAIN button enables lateral before SET
+      always_on_lateral = self.params.get_bool("AlwaysOnLateralEnabled")
+      aol_on_main = self.params.get_bool("AlwaysOnLateralOnMain")
+
+      # Detect MAIN button press: cruise becomes available but not engaged
+      main_button_pressed = (CS.cruiseState.available and not CS.cruiseState.enabled and
+                            not self.cruise_available_prev)
+      self.cruise_available_prev = CS.cruiseState.available
+
+      # Enable preEnabled state (lateral only) when MAIN is pressed
+      if main_button_pressed and always_on_lateral and aol_on_main and not self.enabled:
+        self.events.add(EventName.preDEPRECATED)  # Activates preEnabled state for lateral-only
+
       # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
+      # ENHANCED: Feature 3 - AOL: Don't disengage lateral when AOL enabled
       if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
         (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
         (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
-        self.events.add(EventName.pedalPressed)
+        if not always_on_lateral:
+          # Stock behavior: disengage both lateral and longitudinal
+          self.events.add(EventName.pedalPressed)
+        # else: AOL enabled - pedal press only overrides longitudinal, lateral stays on
 
     # Create events for temperature, disk space, and memory
     if self.sm['deviceState'].thermalStatus >= ThermalStatus.red:
