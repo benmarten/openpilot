@@ -71,6 +71,13 @@ class TogglesLayout(Widget):
         icon="monitoring.png",
       ),
       toggle_item(
+        "Always On Lateral",
+        # ENHANCED: Feature 3 - AOL
+        "Keep steering engaged when using gas/brake pedals. Lateral control only disengages with cruise button or steering override.",
+        self._params.get_bool("AlwaysOnLateralEnabled"),
+        icon="steering_wheel.png",
+      ),
+      toggle_item(
         "Record and Upload Driver Camera",
         DESCRIPTIONS["RecordFront"],
         self._params.get_bool("RecordFront"),
