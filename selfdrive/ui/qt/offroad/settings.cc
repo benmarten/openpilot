@@ -165,36 +165,28 @@ void TogglesPanel::updateToggles() {
                                   .arg(tr("New Driving Visualization"))
                                   .arg(tr("The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner."));
 
-  const bool is_release = params.getBool("IsReleaseBranch");
+  // ENHANCED: Enable experimental mode for all cars, including stock ACC vehicles
+  // Stock openpilot restricts experimental mode to cars with openpilot longitudinal control.
+  // This fork enables it for all cars to improve lateral control and path planning.
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
+    // Always enable experimental mode and personality toggles
+    experimental_mode_toggle->setEnabled(true);
+    long_personality_setting->setEnabled(true);
+
     if (hasLongitudinalControl(CP)) {
-      // normal description and toggle
-      experimental_mode_toggle->setEnabled(true);
+      // Car has full openpilot longitudinal control - standard experience
       experimental_mode_toggle->setDescription(e2e_description);
-      long_personality_setting->setEnabled(true);
     } else {
-      // no long for now
-      experimental_mode_toggle->setEnabled(false);
-      long_personality_setting->setEnabled(false);
-      params.remove("ExperimentalMode");
-
-      const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
-
-      QString long_desc = unavailable + " " + \
-                          tr("openpilot longitudinal control may come in a future update.");
-      if (CP.getAlphaLongitudinalAvailable()) {
-        if (is_release) {
-          long_desc = unavailable + " " + tr("An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.");
-        } else {
-          long_desc = tr("Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.");
-        }
-      }
-      experimental_mode_toggle->setDescription("<b>" + long_desc + "</b><br><br>" + e2e_description);
+      // Car uses stock ACC - experimental mode still improves lateral behavior
+      QString enhanced_desc = tr("<b>Experimental Mode available for your car.</b> ") + \
+                              tr("Your car uses stock ACC for longitudinal control. Experimental mode will improve lateral control, path planning, and driving visualization.") + \
+                              "<br><br>" + e2e_description;
+      experimental_mode_toggle->setDescription(enhanced_desc);
     }
 
     experimental_mode_toggle->refresh();
